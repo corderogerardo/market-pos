@@ -1,0 +1,22 @@
+{
+  "name": "market-desktop-app",
+  "version": "1.0.0",
+  "description": "Aplicación de escritorio para punto de venta (POS) de tienda de alimentos",
+  "private": true,
+  "scripts": {
+    "backend:install": "cd backend && python3 -m venv venv && ./venv/bin/pip install -r requirements.txt",
+    "backend:dev": "cd backend && ./venv/bin/uvicorn app.main:app --reload --port 8000",
+    "backend:seed": "cd backend && ./venv/bin/python -m app.seed",
+    "backend:test": "cd backend && ./venv/bin/pytest tests/ -v",
+    "frontend:install": "cd frontend && npm install",
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:test": "cd frontend && npm test",
+    "frontend:build": "cd frontend && npm run build",
+    "install:all": "npm run backend:install && npm run frontend:install",
+    "dev": "npm run backend:dev & npm run frontend:dev",
+    "test": "npm run backend:test && npm run frontend:test",
+    "e2e": "cd frontend && npm run e2e",
+    "tauri:dev": "cd frontend && npm run tauri:dev",
+    "tauri:build": "cd frontend && npm run tauri:build"
+  }
+}

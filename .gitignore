@@ -1,0 +1,37 @@
+# Python
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/*.db
+*.pyc
+__pycache__/
+
+# Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/out/
+
+# Electron
+frontend/release/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+
+# Backups
+backups/
+
+# Test
+.coverage
+htmlcov/
+.pytest_cache/
