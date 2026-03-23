@@ -69,6 +69,44 @@ jobs:
           projectPath: frontend
           args: ${{ matrix.args }}
 
+      - name: Sign macOS app and recreate DMG
+        if: matrix.platform == 'macos-latest'
+        run: |
+          # Find the .app bundle
+          APP=$(find frontend/src-tauri/target/release/bundle/macos -name "*.app" -type d | head -1)
+          if [ -z "$APP" ]; then
+            echo "No .app found, skipping signing"
+            exit 0
+          fi
+
+          echo "Signing: $APP"
+
+          # Sign the sidecar binary first
+          find "$APP" -name "market-pos-api-*" -exec codesign --force --sign - {} \;
+
+          # Sign all frameworks and dylibs
+          find "$APP" -name "*.dylib" -exec codesign --force --sign - {} \;
+          find "$APP" -name "*.framework" -type d -exec codesign --force --sign - {} \;
+
+          # Sign the main app bundle (deep)
+          codesign --force --deep --sign - "$APP"
+
+          # Verify signature
+          codesign --verify --verbose "$APP" && echo "Signature valid" || echo "Signature check failed"
+
+          # Recreate DMG with properly signed app
+          DMG_DIR="frontend/src-tauri/target/release/bundle/dmg"
+          mkdir -p "$DMG_DIR"
+          APP_NAME=$(basename "$APP" .app)
+
+          # Remove old DMGs
+          rm -f "$DMG_DIR"/*.dmg
+
+          # Create new DMG
+          DMG_PATH="$DMG_DIR/${APP_NAME}_$(uname -m).dmg"
+          hdiutil create -volname "$APP_NAME" -srcfolder "$APP" -ov -format UDZO "$DMG_PATH"
+          echo "Created signed DMG: $DMG_PATH"
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -100,6 +138,22 @@ jobs:
         with:
           draft: false
           generate_release_notes: true
+          body: |
+            ## Installation
+
+            | Platform | File |
+            |----------|------|
+            | macOS | `.dmg` |
+            | Windows | `.exe` |
+            | Linux | `.AppImage` or `.deb` |
+
+            ### macOS: first launch
+            Since the app is not notarized with Apple, macOS may block it on first open.
+            After installing, run this command in Terminal:
+            ```
+            xattr -cr /Applications/Market\ POS.app
+            ```
+            Or go to **System Settings > Privacy & Security** and click **Open Anyway**.
           files: |
             artifacts/**/*.dmg
             artifacts/**/*.deb
