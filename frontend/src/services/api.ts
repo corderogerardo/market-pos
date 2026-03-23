@@ -9,14 +9,28 @@ import type {
   SyncResponse,
   MetodoPago,
 } from "../types/models";
+import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = "http://127.0.0.1:8000";
+
+/** Use Tauri's HTTP plugin (bypasses WebView CORS), fall back to browser fetch. */
+async function httpFetch(
+  url: string,
+  init?: RequestInit,
+): Promise<Response> {
+  try {
+    return await tauriFetch(url, init);
+  } catch {
+    // Fallback for dev mode in browser
+    return await globalThis.fetch(url, init);
+  }
+}
 
 /** Wait for the backend to be ready (retries up to ~30s). */
 export async function waitForBackend(): Promise<void> {
   for (let i = 0; i < 30; i++) {
     try {
-      const res = await fetch(`${API_BASE}/`, { signal: AbortSignal.timeout(2000) });
+      const res = await httpFetch(`${API_BASE}/`);
       if (res.ok) return;
     } catch {
       // Backend not ready yet
@@ -27,7 +41,7 @@ export async function waitForBackend(): Promise<void> {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
+  const response = await httpFetch(`${API_BASE}${path}`, {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
