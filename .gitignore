@@ -35,3 +35,23 @@ backups/
 .coverage
 htmlcov/
 .pytest_cache/
+
+# PyInstaller
+backend/dist/
+backend/build/
+backend/*.spec
+
+# Tauri sidecar binaries (built per-platform, not committed)
+frontend/src-tauri/binaries/
+
+# Tauri build output (built in CI)
+frontend/src-tauri/target/
+
+# Bundle artifacts (built in CI)
+*.dmg
+*.app
+*.AppImage
+*.deb
+*.msi
+*.exe
+!scripts/*.py

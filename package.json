@@ -16,7 +16,8 @@
     "dev": "npm run backend:dev & npm run frontend:dev",
     "test": "npm run backend:test && npm run frontend:test",
     "e2e": "cd frontend && npm run e2e",
+    "backend:build": "python3 scripts/build-backend.py",
     "tauri:dev": "cd frontend && npm run tauri:dev",
-    "tauri:build": "cd frontend && npm run tauri:build"
+    "tauri:build": "npm run backend:build && cd frontend && npm run tauri:build"
   }
 }

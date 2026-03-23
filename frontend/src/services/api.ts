@@ -12,6 +12,20 @@ import type {
 
 const API_BASE = "http://localhost:8000";
 
+/** Wait for the backend to be ready (retries up to ~30s). */
+export async function waitForBackend(): Promise<void> {
+  for (let i = 0; i < 30; i++) {
+    try {
+      const res = await fetch(`${API_BASE}/`, { signal: AbortSignal.timeout(2000) });
+      if (res.ok) return;
+    } catch {
+      // Backend not ready yet
+    }
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  throw new Error("Backend no disponible después de 30 segundos");
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
     headers: { "Content-Type": "application/json" },

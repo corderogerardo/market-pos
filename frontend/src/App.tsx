@@ -4,14 +4,21 @@ import Checkout from "./pages/Checkout";
 import Productos from "./pages/Productos";
 import Ventas from "./pages/Ventas";
 import Configuracion from "./pages/Configuracion";
-import { tasaBcvApi } from "./services/api";
+import { tasaBcvApi, waitForBackend } from "./services/api";
 import type { TasaBCV } from "./types/models";
 
 function App() {
   const [tasaBcv, setTasaBcv] = useState<TasaBCV | null>(null);
+  const [backendReady, setBackendReady] = useState(false);
 
   useEffect(() => {
-    tasaBcvApi.actual().then(setTasaBcv).catch(() => {});
+    waitForBackend()
+      .then(() => {
+        setBackendReady(true);
+        return tasaBcvApi.actual();
+      })
+      .then(setTasaBcv)
+      .catch(() => setBackendReady(true));
   }, []);
 
   const navItems = [
@@ -20,6 +27,18 @@ function App() {
     { to: "/ventas", label: "Ventas", icon: "📊" },
     { to: "/configuracion", label: "Configuración", icon: "⚙️" },
   ];
+
+  if (!backendReady) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-blue-600 mb-4">Market POS</h1>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Iniciando sistema...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
