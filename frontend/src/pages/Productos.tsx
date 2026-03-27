@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { productosApi } from "../services/api";
 import type { Producto, ProductoCreate } from "../types/models";
 
-const CATEGORIAS = ["granos", "lácteos", "carnes", "frutas", "verduras", "bebidas", "aceites", "otros"];
+const CATEGORIAS = ["granos", "lácteos", "carnes", "frutas", "verduras", "bebidas", "aceites", "empaquetados", "dulces", "otros"];
 
 export default function Productos() {
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -200,6 +200,8 @@ export default function Productos() {
                   <option value="kg">kg</option>
                   <option value="g">g</option>
                   <option value="lb">lb</option>
+                  <option value="ml">ml</option>
+                  <option value="l">l</option>
                 </select>
               </div>
               <input

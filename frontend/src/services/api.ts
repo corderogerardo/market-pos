@@ -6,6 +6,7 @@ import type {
   VentaCreate,
   TasaBCV,
   ResumenDiario,
+  ResumenMensual,
   SyncResponse,
   MetodoPago,
 } from "../types/models";
@@ -87,6 +88,10 @@ export const ventasApi = {
   resumenDiario: (fecha?: string) => {
     const qs = fecha ? `?fecha=${fecha}` : "";
     return request<ResumenDiario>(`/ventas/resumen-diario${qs}`);
+  },
+  resumenMensual: (mes?: string) => {
+    const qs = mes ? `?mes=${mes}` : "";
+    return request<ResumenMensual>(`/ventas/resumen-mensual${qs}`);
   },
 };
 

@@ -50,3 +50,11 @@ class ResumenDiario(BaseModel):
     total_usd: float
     total_bs: float
     por_metodo_pago: Dict[str, Dict[str, float]]
+
+
+class ResumenMensual(BaseModel):
+    mes: str
+    total_ventas: int
+    total_usd: float
+    total_bs: float
+    por_metodo_pago: Dict[str, Dict[str, float]]

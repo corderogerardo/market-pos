@@ -37,15 +37,27 @@ export default function Checkout({ tasaBcv }: Props) {
     return () => clearTimeout(timeout);
   }, [busqueda]);
 
+  const getCantidadInicial = (unidad: string) => {
+    if (unidad === "g" || unidad === "ml") return 100;
+    return 1;
+  };
+
+  const getIncremento = (unidad: string) => {
+    if (unidad === "g" || unidad === "ml") return 100;
+    if (unidad === "kg" || unidad === "l" || unidad === "lb") return 0.5;
+    return 1;
+  };
+
   const agregarAlCarrito = useCallback((producto: Producto) => {
     setCarrito((prev) => {
       const existente = prev.find((i) => i.producto.id === producto.id);
       if (existente) {
+        const inc = getIncremento(producto.unidad);
         return prev.map((i) =>
-          i.producto.id === producto.id ? { ...i, cantidad: i.cantidad + 1 } : i
+          i.producto.id === producto.id ? { ...i, cantidad: i.cantidad + inc } : i
         );
       }
-      return [...prev, { producto, cantidad: 1 }];
+      return [...prev, { producto, cantidad: getCantidadInicial(producto.unidad) }];
     });
     setBusqueda("");
     setResultados([]);
@@ -175,14 +187,27 @@ export default function Checkout({ tasaBcv }: Props) {
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          onClick={() => actualizarCantidad(item.producto.id, item.cantidad - 1)}
+                          onClick={() => actualizarCantidad(item.producto.id, item.cantidad - getIncremento(item.producto.unidad))}
                           className="w-7 h-7 rounded bg-gray-100 hover:bg-gray-200 text-sm"
                         >
                           -
                         </button>
-                        <span className="w-8 text-center">{item.cantidad}</span>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            value={item.cantidad}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value);
+                              if (!isNaN(val) && val > 0) actualizarCantidad(item.producto.id, val);
+                            }}
+                            className="w-16 text-center border rounded px-1 py-0.5 text-sm"
+                            step={item.producto.unidad === "g" || item.producto.unidad === "ml" ? 50 : 0.1}
+                            min={0}
+                          />
+                          <span className="text-xs text-gray-500">{item.producto.unidad}</span>
+                        </div>
                         <button
-                          onClick={() => actualizarCantidad(item.producto.id, item.cantidad + 1)}
+                          onClick={() => actualizarCantidad(item.producto.id, item.cantidad + getIncremento(item.producto.unidad))}
                           className="w-7 h-7 rounded bg-gray-100 hover:bg-gray-200 text-sm"
                         >
                           +

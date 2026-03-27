@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ventasApi } from "../services/api";
-import type { Venta, ResumenDiario, MetodoPago } from "../types/models";
+import type { Venta, ResumenDiario, ResumenMensual, MetodoPago } from "../types/models";
 
 const METODOS: { value: MetodoPago | ""; label: string }[] = [
   { value: "", label: "Todos" },
@@ -18,10 +18,13 @@ const METODO_LABELS: Record<string, string> = {
 export default function Ventas() {
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [resumen, setResumen] = useState<ResumenDiario | null>(null);
+  const [resumenMensual, setResumenMensual] = useState<ResumenMensual | null>(null);
   const [fechaDesde, setFechaDesde] = useState(new Date().toISOString().split("T")[0]);
   const [fechaHasta, setFechaHasta] = useState(new Date().toISOString().split("T")[0]);
   const [metodoFiltro, setMetodoFiltro] = useState<MetodoPago | "">("");
   const [expandido, setExpandido] = useState<string | null>(null);
+
+  const mesActual = new Date().toISOString().slice(0, 7);
 
   useEffect(() => {
     ventasApi
@@ -34,6 +37,7 @@ export default function Ventas() {
       .catch(() => {});
 
     ventasApi.resumenDiario(fechaDesde).then(setResumen).catch(() => {});
+    ventasApi.resumenMensual(mesActual).then(setResumenMensual).catch(() => {});
   }, [fechaDesde, fechaHasta, metodoFiltro]);
 
   return (
@@ -66,6 +70,39 @@ export default function Ventas() {
             {Object.keys(resumen.por_metodo_pago).length === 0 && (
               <p className="text-xs text-gray-400">Sin ventas</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Monthly summary */}
+      {resumenMensual && (
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-3">Resumen del mes ({resumenMensual.mes})</h2>
+          <div className="grid grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-lg border border-indigo-100">
+              <p className="text-sm text-gray-500">Ventas del mes</p>
+              <p className="text-2xl font-bold">{resumenMensual.total_ventas}</p>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-indigo-100">
+              <p className="text-sm text-gray-500">Total USD del mes</p>
+              <p className="text-2xl font-bold text-green-600">${resumenMensual.total_usd.toFixed(2)}</p>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-indigo-100">
+              <p className="text-sm text-gray-500">Total Bs del mes</p>
+              <p className="text-2xl font-bold text-blue-600">Bs {resumenMensual.total_bs.toFixed(2)}</p>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-indigo-100">
+              <p className="text-sm text-gray-500 mb-2">Por método de pago</p>
+              {Object.entries(resumenMensual.por_metodo_pago).map(([metodo, data]) => (
+                <div key={metodo} className="flex justify-between text-sm">
+                  <span className="text-gray-600">{METODO_LABELS[metodo] || metodo}</span>
+                  <span className="font-medium">${data.total_usd.toFixed(2)} ({data.cantidad})</span>
+                </div>
+              ))}
+              {Object.keys(resumenMensual.por_metodo_pago).length === 0 && (
+                <p className="text-xs text-gray-400">Sin ventas</p>
+              )}
+            </div>
           </div>
         </div>
       )}

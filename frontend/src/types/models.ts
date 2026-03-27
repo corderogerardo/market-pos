@@ -72,6 +72,14 @@ export interface ResumenDiario {
   por_metodo_pago: Record<string, { total_usd: number; total_bs: number; cantidad: number }>;
 }
 
+export interface ResumenMensual {
+  mes: string;
+  total_ventas: number;
+  total_usd: number;
+  total_bs: number;
+  por_metodo_pago: Record<string, { total_usd: number; total_bs: number; cantidad: number }>;
+}
+
 export interface CartItem {
   producto: Producto;
   cantidad: number;

@@ -6,7 +6,7 @@ from datetime import date, datetime
 from app.database import get_db
 from app.models.producto import Producto
 from app.models.venta import Venta, VentaItem
-from app.schemas.venta import VentaCreate, VentaResponse, ResumenDiario, MetodoPago
+from app.schemas.venta import VentaCreate, VentaResponse, ResumenDiario, ResumenMensual, MetodoPago
 
 router = APIRouter()
 
@@ -104,6 +104,54 @@ def resumen_diario(
 
     return ResumenDiario(
         fecha=target_date.isoformat(),
+        total_ventas=len(ventas),
+        total_usd=round(total_usd, 2),
+        total_bs=round(total_bs, 2),
+        por_metodo_pago=por_metodo,
+    )
+
+
+@router.get("/resumen-mensual", response_model=ResumenMensual)
+def resumen_mensual(
+    mes: Optional[str] = Query(None, description="Mes en formato YYYY-MM (default: mes actual)"),
+    db: Session = Depends(get_db),
+):
+    if mes:
+        try:
+            year, month = map(int, mes.split("-"))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Formato de mes inválido. Use YYYY-MM")
+    else:
+        today = date.today()
+        year, month = today.year, today.month
+
+    start = datetime(year, month, 1)
+    if month == 12:
+        end = datetime(year + 1, 1, 1)
+    else:
+        end = datetime(year, month + 1, 1)
+
+    ventas = (
+        db.query(Venta)
+        .filter(Venta.fecha >= start, Venta.fecha < end)
+        .all()
+    )
+
+    por_metodo = {}
+    total_usd = 0.0
+    total_bs = 0.0
+
+    for v in ventas:
+        total_usd += v.total_usd
+        total_bs += v.total_bs
+        if v.metodo_pago not in por_metodo:
+            por_metodo[v.metodo_pago] = {"total_usd": 0.0, "total_bs": 0.0, "cantidad": 0}
+        por_metodo[v.metodo_pago]["total_usd"] += v.total_usd
+        por_metodo[v.metodo_pago]["total_bs"] += v.total_bs
+        por_metodo[v.metodo_pago]["cantidad"] += 1
+
+    return ResumenMensual(
+        mes="{}-{:02d}".format(year, month),
         total_ventas=len(ventas),
         total_usd=round(total_usd, 2),
         total_bs=round(total_bs, 2),
