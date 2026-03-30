@@ -10,6 +10,8 @@ class ProductoBase(BaseModel):
     unidad: str = "kg"
     qr_code: Optional[str] = None
     categoria: Optional[str] = None
+    tipo_venta: str = "peso"
+    inventario: Optional[float] = None
 
 
 class ProductoCreate(ProductoBase):
@@ -23,6 +25,8 @@ class ProductoUpdate(BaseModel):
     unidad: Optional[str] = None
     qr_code: Optional[str] = None
     categoria: Optional[str] = None
+    tipo_venta: Optional[str] = None
+    inventario: Optional[float] = None
     activo: Optional[bool] = None
 
 

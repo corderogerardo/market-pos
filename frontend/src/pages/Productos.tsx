@@ -18,6 +18,8 @@ export default function Productos() {
     unidad: "kg",
     qr_code: "",
     categoria: "",
+    tipo_venta: "peso",
+    inventario: undefined,
   });
 
   const cargarProductos = () => {
@@ -37,7 +39,7 @@ export default function Productos() {
 
   const abrirFormNuevo = () => {
     setEditando(null);
-    setForm({ nombre: "", precio: 0, peso: undefined, unidad: "kg", qr_code: "", categoria: "" });
+    setForm({ nombre: "", precio: 0, peso: undefined, unidad: "kg", qr_code: "", categoria: "", tipo_venta: "peso", inventario: undefined });
     setMostrarForm(true);
   };
 
@@ -50,6 +52,8 @@ export default function Productos() {
       unidad: p.unidad,
       qr_code: p.qr_code ?? "",
       categoria: p.categoria ?? "",
+      tipo_venta: p.tipo_venta ?? "peso",
+      inventario: p.inventario ?? undefined,
     });
     setMostrarForm(true);
   };
@@ -114,7 +118,9 @@ export default function Productos() {
             <tr>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Nombre</th>
               <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">Precio USD</th>
+              <th className="text-center px-4 py-3 text-sm font-medium text-gray-600">Tipo</th>
               <th className="text-center px-4 py-3 text-sm font-medium text-gray-600">Peso</th>
+              <th className="text-center px-4 py-3 text-sm font-medium text-gray-600">Inventario</th>
               <th className="text-center px-4 py-3 text-sm font-medium text-gray-600">Categoría</th>
               <th className="text-center px-4 py-3 text-sm font-medium text-gray-600">QR</th>
               <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">Acciones</th>
@@ -125,8 +131,24 @@ export default function Productos() {
               <tr key={p.id} className="border-t border-gray-100 hover:bg-gray-50">
                 <td className="px-4 py-3 font-medium">{p.nombre}</td>
                 <td className="px-4 py-3 text-right text-green-600">${p.precio.toFixed(2)}</td>
+                <td className="px-4 py-3 text-center text-sm">
+                  <span className={`px-2 py-0.5 rounded-full text-xs ${
+                    p.tipo_venta === "unidad" ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"
+                  }`}>
+                    {p.tipo_venta === "unidad" ? "Unidad" : "Peso"}
+                  </span>
+                </td>
                 <td className="px-4 py-3 text-center text-sm text-gray-500">
                   {p.peso ? `${p.peso} ${p.unidad}` : "—"}
+                </td>
+                <td className="px-4 py-3 text-center text-sm">
+                  {p.inventario !== null && p.inventario !== undefined ? (
+                    <span className={p.inventario <= 0 ? "text-red-600 font-semibold" : p.inventario <= 5 ? "text-amber-600" : "text-gray-700"}>
+                      {p.inventario} {p.tipo_venta === "unidad" ? "und" : p.unidad}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-center">
                   {p.categoria && (
@@ -184,25 +206,49 @@ export default function Productos() {
                   className="flex-1 px-3 py-2 border rounded-lg"
                   step="0.01"
                 />
+                <select
+                  value={form.tipo_venta}
+                  onChange={(e) => setForm({ ...form, tipo_venta: e.target.value })}
+                  className="w-32 px-2 py-2 border rounded-lg"
+                >
+                  <option value="peso">Por peso</option>
+                  <option value="unidad">Por unidad</option>
+                </select>
+              </div>
+              {form.tipo_venta === "peso" && (
+                <div className="flex gap-3">
+                  <input
+                    type="number"
+                    placeholder="Peso"
+                    value={form.peso || ""}
+                    onChange={(e) => setForm({ ...form, peso: parseFloat(e.target.value) || undefined })}
+                    className="flex-1 px-3 py-2 border rounded-lg"
+                    step="0.1"
+                  />
+                  <select
+                    value={form.unidad}
+                    onChange={(e) => setForm({ ...form, unidad: e.target.value })}
+                    className="w-20 px-2 py-2 border rounded-lg"
+                  >
+                    <option value="kg">kg</option>
+                    <option value="g">g</option>
+                    <option value="lb">lb</option>
+                    <option value="ml">ml</option>
+                    <option value="l">l</option>
+                  </select>
+                </div>
+              )}
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Inventario ({form.tipo_venta === "unidad" ? "unidades" : form.unidad || "kg"})</label>
                 <input
                   type="number"
-                  placeholder="Peso"
-                  value={form.peso || ""}
-                  onChange={(e) => setForm({ ...form, peso: parseFloat(e.target.value) || undefined })}
-                  className="w-24 px-3 py-2 border rounded-lg"
-                  step="0.1"
+                  placeholder={form.tipo_venta === "unidad" ? "Ej: 50 unidades" : `Ej: 25 ${form.unidad || "kg"}`}
+                  value={form.inventario ?? ""}
+                  onChange={(e) => setForm({ ...form, inventario: e.target.value ? parseFloat(e.target.value) : undefined })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  step={form.tipo_venta === "unidad" ? 1 : 0.1}
+                  min="0"
                 />
-                <select
-                  value={form.unidad}
-                  onChange={(e) => setForm({ ...form, unidad: e.target.value })}
-                  className="w-20 px-2 py-2 border rounded-lg"
-                >
-                  <option value="kg">kg</option>
-                  <option value="g">g</option>
-                  <option value="lb">lb</option>
-                  <option value="ml">ml</option>
-                  <option value="l">l</option>
-                </select>
               </div>
               <input
                 type="text"

@@ -16,6 +16,8 @@ class Producto(Base):
     unidad: Mapped[str] = mapped_column(String, default="kg")
     qr_code: Mapped[Optional[str]] = mapped_column(String, unique=True, nullable=True)
     categoria: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    tipo_venta: Mapped[str] = mapped_column(String, default="peso")  # "peso" or "unidad"
+    inventario: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
     creado_en: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     actualizado_en: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

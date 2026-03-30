@@ -8,6 +8,8 @@ export interface Producto {
   unidad: string;
   qr_code: string | null;
   categoria: string | null;
+  tipo_venta: string;
+  inventario: number | null;
   activo: boolean;
   creado_en: string;
   actualizado_en: string;
@@ -20,6 +22,8 @@ export interface ProductoCreate {
   unidad?: string;
   qr_code?: string;
   categoria?: string;
+  tipo_venta?: string;
+  inventario?: number;
 }
 
 export interface ProductoUpdate {
@@ -29,6 +33,8 @@ export interface ProductoUpdate {
   unidad?: string;
   qr_code?: string;
   categoria?: string;
+  tipo_venta?: string;
+  inventario?: number;
   activo?: boolean;
 }
 

@@ -18,6 +18,7 @@ def crear_venta(venta_data: VentaCreate, db: Session = Depends(get_db)):
 
     total_usd = 0.0
     items = []
+    productos_vendidos = []
 
     for item_data in venta_data.items:
         producto = db.query(Producto).filter(Producto.id == item_data.producto_id).first()
@@ -38,6 +39,7 @@ def crear_venta(venta_data: VentaCreate, db: Session = Depends(get_db)):
                 subtotal=subtotal,
             )
         )
+        productos_vendidos.append((producto, item_data.cantidad))
 
     total_bs = total_usd * venta_data.tasa_bcv
 
@@ -48,6 +50,11 @@ def crear_venta(venta_data: VentaCreate, db: Session = Depends(get_db)):
         metodo_pago=venta_data.metodo_pago.value,
         items=items,
     )
+
+    # Deduct inventory
+    for producto, cantidad in productos_vendidos:
+        if producto.inventario is not None:
+            producto.inventario = max(0, producto.inventario - cantidad)
 
     db.add(venta)
     db.commit()

@@ -23,6 +23,7 @@ export default function Checkout({ tasaBcv }: Props) {
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
   const [procesando, setProcesando] = useState(false);
+  const [bsInputs, setBsInputs] = useState<Record<string, string>>({});
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Search products
@@ -37,14 +38,16 @@ export default function Checkout({ tasaBcv }: Props) {
     return () => clearTimeout(timeout);
   }, [busqueda]);
 
-  const getCantidadInicial = (unidad: string) => {
-    if (unidad === "g" || unidad === "ml") return 100;
+  const getCantidadInicial = (producto: Producto) => {
+    if (producto.tipo_venta === "unidad") return 1;
+    if (producto.unidad === "g" || producto.unidad === "ml") return 100;
     return 1;
   };
 
-  const getIncremento = (unidad: string) => {
-    if (unidad === "g" || unidad === "ml") return 100;
-    if (unidad === "kg" || unidad === "l" || unidad === "lb") return 0.5;
+  const getIncremento = (producto: Producto) => {
+    if (producto.tipo_venta === "unidad") return 1;
+    if (producto.unidad === "g" || producto.unidad === "ml") return 100;
+    if (producto.unidad === "kg" || producto.unidad === "l" || producto.unidad === "lb") return 0.5;
     return 1;
   };
 
@@ -52,12 +55,12 @@ export default function Checkout({ tasaBcv }: Props) {
     setCarrito((prev) => {
       const existente = prev.find((i) => i.producto.id === producto.id);
       if (existente) {
-        const inc = getIncremento(producto.unidad);
+        const inc = getIncremento(producto);
         return prev.map((i) =>
           i.producto.id === producto.id ? { ...i, cantidad: i.cantidad + inc } : i
         );
       }
-      return [...prev, { producto, cantidad: getCantidadInicial(producto.unidad) }];
+      return [...prev, { producto, cantidad: getCantidadInicial(producto) }];
     });
     setBusqueda("");
     setResultados([]);
@@ -65,6 +68,12 @@ export default function Checkout({ tasaBcv }: Props) {
   }, []);
 
   const actualizarCantidad = (productoId: string, cantidad: number) => {
+    // Clear Bs override when quantity changes directly
+    setBsInputs((prev) => {
+      const next = { ...prev };
+      delete next[productoId];
+      return next;
+    });
     if (cantidad <= 0) {
       setCarrito((prev) => prev.filter((i) => i.producto.id !== productoId));
     } else {
@@ -74,8 +83,34 @@ export default function Checkout({ tasaBcv }: Props) {
     }
   };
 
+  const actualizarDesdeBS = (productoId: string, bsValue: string) => {
+    setBsInputs((prev) => ({ ...prev, [productoId]: bsValue }));
+    const bs = parseFloat(bsValue);
+    if (!isNaN(bs) && bs > 0 && tasaBcv) {
+      const item = carrito.find((i) => i.producto.id === productoId);
+      if (!item) return;
+      const precioEnBs = item.producto.precio * tasaBcv.tasa;
+      let nuevaCantidad = bs / precioEnBs;
+      if (item.producto.tipo_venta === "unidad") {
+        nuevaCantidad = Math.max(1, Math.round(nuevaCantidad));
+      } else {
+        nuevaCantidad = parseFloat(nuevaCantidad.toFixed(2));
+      }
+      if (nuevaCantidad > 0) {
+        setCarrito((prev) =>
+          prev.map((i) => (i.producto.id === productoId ? { ...i, cantidad: nuevaCantidad } : i))
+        );
+      }
+    }
+  };
+
   const eliminarDelCarrito = (productoId: string) => {
     setCarrito((prev) => prev.filter((i) => i.producto.id !== productoId));
+    setBsInputs((prev) => {
+      const next = { ...prev };
+      delete next[productoId];
+      return next;
+    });
   };
 
   const totalUSD = carrito.reduce((sum, item) => sum + item.producto.precio * item.cantidad, 0);
@@ -92,6 +127,7 @@ export default function Checkout({ tasaBcv }: Props) {
         tasa_bcv: tasaBcv.tasa,
       });
       setCarrito([]);
+      setBsInputs({});
       setMensaje("Venta registrada exitosamente");
       setTimeout(() => setMensaje(""), 3000);
     } catch (e) {
@@ -108,6 +144,12 @@ export default function Checkout({ tasaBcv }: Props) {
       .then(agregarAlCarrito)
       .catch(() => setError(`Producto con QR "${code}" no encontrado`));
   }, [agregarAlCarrito]);
+
+  const getBsDisplay = (item: CartItem) => {
+    if (bsInputs[item.producto.id] !== undefined) return bsInputs[item.producto.id];
+    if (!tasaBcv) return "";
+    return (item.cantidad * item.producto.precio * tasaBcv.tasa).toFixed(2);
+  };
 
   return (
     <div className="flex h-full">
@@ -143,7 +185,17 @@ export default function Checkout({ tasaBcv }: Props) {
                 onClick={() => agregarAlCarrito(p)}
                 className="w-full px-4 py-2 text-left hover:bg-blue-50 flex justify-between items-center border-b border-gray-100 last:border-0"
               >
-                <span className="font-medium">{p.nombre}</span>
+                <div>
+                  <span className="font-medium">{p.nombre}</span>
+                  <span className="ml-2 text-xs text-gray-400">
+                    {p.tipo_venta === "unidad" ? "und" : p.unidad}
+                  </span>
+                  {p.inventario !== null && (
+                    <span className={`ml-2 text-xs ${p.inventario <= 0 ? "text-red-500" : "text-gray-400"}`}>
+                      (inv: {p.inventario} {p.tipo_venta === "unidad" ? "und" : p.unidad})
+                    </span>
+                  )}
+                </div>
                 <span className="text-green-600 font-semibold">${p.precio.toFixed(2)}</span>
               </button>
             ))}
@@ -173,61 +225,100 @@ export default function Checkout({ tasaBcv }: Props) {
             <table className="w-full">
               <thead className="bg-gray-50 sticky top-0">
                 <tr>
-                  <th className="text-left px-4 py-2 text-sm text-gray-600">Producto</th>
-                  <th className="text-center px-4 py-2 text-sm text-gray-600">Cantidad</th>
-                  <th className="text-right px-4 py-2 text-sm text-gray-600">Precio</th>
-                  <th className="text-right px-4 py-2 text-sm text-gray-600">Subtotal</th>
+                  <th className="text-left px-3 py-2 text-sm text-gray-600">Producto</th>
+                  <th className="text-center px-3 py-2 text-sm text-gray-600">Cantidad</th>
+                  <th className="text-center px-3 py-2 text-sm text-gray-600">Bs</th>
+                  <th className="text-right px-3 py-2 text-sm text-gray-600">Precio</th>
+                  <th className="text-right px-3 py-2 text-sm text-gray-600">Subtotal</th>
                   <th className="px-2"></th>
                 </tr>
               </thead>
               <tbody>
-                {carrito.map((item) => (
-                  <tr key={item.producto.id} className="border-b border-gray-100">
-                    <td className="px-4 py-3 font-medium">{item.producto.nombre}</td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => actualizarCantidad(item.producto.id, item.cantidad - getIncremento(item.producto.unidad))}
-                          className="w-7 h-7 rounded bg-gray-100 hover:bg-gray-200 text-sm"
-                        >
-                          -
-                        </button>
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="number"
-                            value={item.cantidad}
-                            onChange={(e) => {
-                              const val = parseFloat(e.target.value);
-                              if (!isNaN(val) && val > 0) actualizarCantidad(item.producto.id, val);
-                            }}
-                            className="w-16 text-center border rounded px-1 py-0.5 text-sm"
-                            step={item.producto.unidad === "g" || item.producto.unidad === "ml" ? 50 : 0.1}
-                            min={0}
-                          />
-                          <span className="text-xs text-gray-500">{item.producto.unidad}</span>
+                {carrito.map((item) => {
+                  const isUnidad = item.producto.tipo_venta === "unidad";
+                  const unidadLabel = isUnidad ? "und" : item.producto.unidad;
+                  const incremento = getIncremento(item.producto);
+                  const step = isUnidad ? 1 : (item.producto.unidad === "g" || item.producto.unidad === "ml" ? 50 : 0.1);
+
+                  return (
+                    <tr key={item.producto.id} className="border-b border-gray-100">
+                      <td className="px-3 py-3">
+                        <div className="font-medium">{item.producto.nombre}</div>
+                        {item.producto.inventario !== null && (
+                          <div className={`text-xs ${item.producto.inventario - item.cantidad < 0 ? "text-red-500" : "text-gray-400"}`}>
+                            Inv: {item.producto.inventario} {unidadLabel}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => actualizarCantidad(item.producto.id, item.cantidad - incremento)}
+                            className="w-7 h-7 rounded bg-gray-100 hover:bg-gray-200 text-sm"
+                          >
+                            -
+                          </button>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              value={item.cantidad}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value);
+                                if (!isNaN(val) && val > 0) {
+                                  actualizarCantidad(item.producto.id, isUnidad ? Math.round(val) : val);
+                                }
+                              }}
+                              className="w-16 text-center border rounded px-1 py-0.5 text-sm"
+                              step={step}
+                              min={isUnidad ? 1 : 0.1}
+                            />
+                            <span className="text-xs text-gray-500">{unidadLabel}</span>
+                          </div>
+                          <button
+                            onClick={() => actualizarCantidad(item.producto.id, item.cantidad + incremento)}
+                            className="w-7 h-7 rounded bg-gray-100 hover:bg-gray-200 text-sm"
+                          >
+                            +
+                          </button>
                         </div>
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        {tasaBcv && (
+                          <div className="flex items-center justify-center gap-1">
+                            <input
+                              type="number"
+                              value={getBsDisplay(item)}
+                              onChange={(e) => actualizarDesdeBS(item.producto.id, e.target.value)}
+                              onBlur={() => {
+                                setBsInputs((prev) => {
+                                  const next = { ...prev };
+                                  delete next[item.producto.id];
+                                  return next;
+                                });
+                              }}
+                              className="w-20 text-center border rounded px-1 py-0.5 text-sm"
+                              step="0.01"
+                              min="0"
+                            />
+                            <span className="text-xs text-gray-500">Bs</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-right text-sm">${item.producto.precio.toFixed(2)}</td>
+                      <td className="px-3 py-3 text-right font-semibold">
+                        ${(item.producto.precio * item.cantidad).toFixed(2)}
+                      </td>
+                      <td className="px-2">
                         <button
-                          onClick={() => actualizarCantidad(item.producto.id, item.cantidad + getIncremento(item.producto.unidad))}
-                          className="w-7 h-7 rounded bg-gray-100 hover:bg-gray-200 text-sm"
+                          onClick={() => eliminarDelCarrito(item.producto.id)}
+                          className="text-red-400 hover:text-red-600"
                         >
-                          +
+                          ✕
                         </button>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-right">${item.producto.precio.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right font-semibold">
-                      ${(item.producto.precio * item.cantidad).toFixed(2)}
-                    </td>
-                    <td className="px-2">
-                      <button
-                        onClick={() => eliminarDelCarrito(item.producto.id)}
-                        className="text-red-400 hover:text-red-600"
-                      >
-                        ✕
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
