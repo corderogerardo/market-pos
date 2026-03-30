@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 # Store database in a stable location under user's home directory
@@ -24,6 +24,19 @@ def get_db():
         db.close()
 
 
+def _migrate_db():
+    """Add missing columns to existing tables."""
+    insp = inspect(engine)
+    if "productos" in insp.get_table_names():
+        columns = {col["name"] for col in insp.get_columns("productos")}
+        with engine.begin() as conn:
+            if "tipo_venta" not in columns:
+                conn.execute(text("ALTER TABLE productos ADD COLUMN tipo_venta VARCHAR DEFAULT 'peso'"))
+            if "inventario" not in columns:
+                conn.execute(text("ALTER TABLE productos ADD COLUMN inventario FLOAT"))
+
+
 def init_db():
     from app.models import producto, venta, tasa_bcv, sincronizacion  # noqa: F401
     Base.metadata.create_all(bind=engine)
+    _migrate_db()
