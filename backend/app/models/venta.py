@@ -1,6 +1,9 @@
 import uuid
 from typing import List
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+VE_TZ = ZoneInfo("America/Caracas")
 from sqlalchemy import String, Float, DateTime, ForeignKey, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
@@ -18,7 +21,7 @@ class Venta(Base):
     )
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    fecha: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    fecha: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(VE_TZ))
     total_usd: Mapped[float] = mapped_column(Float, nullable=False)
     tasa_bcv: Mapped[float] = mapped_column(Float, nullable=False)
     total_bs: Mapped[float] = mapped_column(Float, nullable=False)

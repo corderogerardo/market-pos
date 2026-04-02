@@ -2,7 +2,10 @@
 from app.database import SessionLocal, init_db
 from app.models.producto import Producto
 from app.models.tasa_bcv import TasaBCV
-from datetime import date
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+VE_TZ = ZoneInfo("America/Caracas")
 
 PRODUCTOS_SEED = [
     {"nombre": "Harina PAN 1kg", "precio": 1.50, "peso": 1.0, "unidad": "kg", "qr_code": "HARINA001", "categoria": "granos", "tipo_venta": "unidad", "inventario": 50},
@@ -35,7 +38,7 @@ def seed_db():
             print(f"✓ {len(PRODUCTOS_SEED)} productos creados")
 
         if db.query(TasaBCV).count() == 0:
-            tasa = TasaBCV(fecha=date.today().isoformat(), tasa=36.50)
+            tasa = TasaBCV(fecha=datetime.now(VE_TZ).date().isoformat(), tasa=36.50)
             db.add(tasa)
             db.commit()
             print("✓ Tasa BCV inicial registrada (36.50)")

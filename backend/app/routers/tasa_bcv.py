@@ -32,9 +32,10 @@ async def actualizar_tasa(db: Session = Depends(get_db)):
 
 @router.post("/manual", response_model=TasaBCVResponse)
 def registrar_tasa_manual(datos: TasaBCVManual, db: Session = Depends(get_db)):
-    from datetime import date
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
 
-    nueva_tasa = TasaBCV(fecha=date.today().isoformat(), tasa=datos.tasa)
+    nueva_tasa = TasaBCV(fecha=datetime.now(ZoneInfo("America/Caracas")).date().isoformat(), tasa=datos.tasa)
     db.add(nueva_tasa)
     db.commit()
     db.refresh(nueva_tasa)

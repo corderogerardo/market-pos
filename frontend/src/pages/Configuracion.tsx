@@ -131,7 +131,7 @@ export default function Configuracion({ tasaBcv, onTasaUpdate }: Props) {
               <p className="text-3xl font-bold text-blue-600">{tasaBcv.tasa.toFixed(2)} Bs/$</p>
               <p className="text-sm text-gray-500">
                 Fecha: {tasaBcv.fecha} | Actualizado:{" "}
-                {new Date(tasaBcv.consultado_en).toLocaleString("es-VE")}
+                {new Date(tasaBcv.consultado_en).toLocaleString("es-VE", { timeZone: "America/Caracas" })}
               </p>
             </div>
           </div>

@@ -3,6 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, cast, Date
 from datetime import date, datetime
+from zoneinfo import ZoneInfo
+
+VE_TZ = ZoneInfo("America/Caracas")
 from app.database import get_db
 from app.models.producto import Producto
 from app.models.venta import Venta, VentaItem
@@ -86,7 +89,7 @@ def resumen_diario(
     fecha: Optional[date] = Query(None, description="Fecha del resumen (default: hoy)"),
     db: Session = Depends(get_db),
 ):
-    target_date = fecha or date.today()
+    target_date = fecha or datetime.now(VE_TZ).date()
 
     start = datetime.combine(target_date, datetime.min.time())
     end = datetime.combine(target_date, datetime.max.time())
@@ -129,7 +132,7 @@ def resumen_mensual(
         except ValueError:
             raise HTTPException(status_code=400, detail="Formato de mes inválido. Use YYYY-MM")
     else:
-        today = date.today()
+        today = datetime.now(VE_TZ).date()
         year, month = today.year, today.month
 
     start = datetime(year, month, 1)

@@ -1,6 +1,9 @@
 import uuid
 from typing import Optional
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+VE_TZ = ZoneInfo("America/Caracas")
 from sqlalchemy import String, Float, Boolean, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
@@ -19,5 +22,5 @@ class Producto(Base):
     tipo_venta: Mapped[str] = mapped_column(String, default="peso")  # "peso" or "unidad"
     inventario: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
-    creado_en: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
-    actualizado_en: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    creado_en: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(VE_TZ))
+    actualizado_en: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(VE_TZ), onupdate=lambda: datetime.now(VE_TZ))

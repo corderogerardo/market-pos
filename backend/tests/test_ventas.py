@@ -122,7 +122,8 @@ def test_filtrar_ventas_por_metodo_pago(client, productos_test):
 
 
 def test_resumen_diario(client, productos_test):
-    from datetime import datetime, timezone
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
     p1, p2, _ = productos_test
     client.post("/ventas/", json={
         "items": [{"producto_id": p1["id"], "cantidad": 2}],
@@ -135,8 +136,8 @@ def test_resumen_diario(client, productos_test):
         "tasa_bcv": 36.50,
     })
 
-    # Use UTC date since ventas are stored in UTC
-    today_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    # Use Venezuela date since ventas are stored in VE timezone
+    today_utc = datetime.now(ZoneInfo("America/Caracas")).strftime("%Y-%m-%d")
     response = client.get("/ventas/resumen-diario?fecha={}".format(today_utc))
     assert response.status_code == 200
     data = response.json()

@@ -19,12 +19,12 @@ export default function Ventas() {
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [resumen, setResumen] = useState<ResumenDiario | null>(null);
   const [resumenMensual, setResumenMensual] = useState<ResumenMensual | null>(null);
-  const [fechaDesde, setFechaDesde] = useState(new Date().toISOString().split("T")[0]);
-  const [fechaHasta, setFechaHasta] = useState(new Date().toISOString().split("T")[0]);
+  const [fechaDesde, setFechaDesde] = useState(new Date().toLocaleDateString("en-CA", { timeZone: "America/Caracas" }));
+  const [fechaHasta, setFechaHasta] = useState(new Date().toLocaleDateString("en-CA", { timeZone: "America/Caracas" }));
   const [metodoFiltro, setMetodoFiltro] = useState<MetodoPago | "">("");
   const [expandido, setExpandido] = useState<string | null>(null);
 
-  const mesActual = new Date().toISOString().slice(0, 7);
+  const mesActual = new Date().toLocaleDateString("en-CA", { timeZone: "America/Caracas" }).slice(0, 7);
 
   useEffect(() => {
     ventasApi
@@ -151,7 +151,7 @@ export default function Ventas() {
             >
               <div className="flex items-center gap-4">
                 <span className="text-sm text-gray-500">
-                  {new Date(v.fecha).toLocaleString("es-VE")}
+                  {new Date(v.fecha).toLocaleString("es-VE", { timeZone: "America/Caracas" })}
                 </span>
                 <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100">
                   {METODO_LABELS[v.metodo_pago] || v.metodo_pago}

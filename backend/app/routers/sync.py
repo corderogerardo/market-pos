@@ -1,7 +1,10 @@
 import json
 import os
 from typing import List
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+VE_TZ = ZoneInfo("America/Caracas")
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -20,7 +23,7 @@ BACKUP_DIR = os.path.join(os.path.expanduser("~"), ".market-pos", "backups")
 def _export_data(db: Session) -> dict:
     """Export all database data to a dictionary."""
     return {
-        "fecha_backup": datetime.now(timezone.utc).isoformat(),
+        "fecha_backup": datetime.now(VE_TZ).isoformat(),
         "productos": [
             {
                 "id": p.id, "nombre": p.nombre, "precio": p.precio,
@@ -61,7 +64,7 @@ def _export_data(db: Session) -> dict:
 def _save_local(data: dict) -> str:
     """Save backup to local disk and return filepath."""
     os.makedirs(BACKUP_DIR, exist_ok=True)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(VE_TZ).strftime("%Y%m%d_%H%M%S")
     filepath = os.path.join(BACKUP_DIR, "backup_{}.json".format(timestamp))
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)

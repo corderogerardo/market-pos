@@ -1,7 +1,10 @@
 """Servicio para obtener la tasa USD/Bs del Banco Central de Venezuela."""
 import re
 from typing import Optional, Dict
-from datetime import date
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+VE_TZ = ZoneInfo("America/Caracas")
 import httpx
 from bs4 import BeautifulSoup
 
@@ -25,7 +28,7 @@ async def obtener_tasa_bcv() -> Optional[Dict]:
             match = re.search(r"(\d+[.,]?\d*)", tasa_text)
             if match:
                 tasa = float(match.group(1))
-                return {"fecha": date.today().isoformat(), "tasa": tasa}
+                return {"fecha": datetime.now(VE_TZ).date().isoformat(), "tasa": tasa}
 
         return None
     except Exception:
