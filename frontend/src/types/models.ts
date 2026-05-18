@@ -135,3 +135,17 @@ export interface DeudaUpdate {
   nombre_cliente?: string;
   nota?: string;
 }
+
+export interface LicenciaInfo {
+  cliente: string;
+  machine_id: string;
+  emitido: string;
+  expira: string | null;
+}
+
+export interface LicenciaEstado {
+  activa: boolean;
+  motivo: string;
+  machine_id: string;
+  info: LicenciaInfo | null;
+}

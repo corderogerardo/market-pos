@@ -1,26 +1,58 @@
 import { Routes, Route, NavLink } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Checkout from "./pages/Checkout";
 import Productos from "./pages/Productos";
 import Ventas from "./pages/Ventas";
 import Deudas from "./pages/Deudas";
 import Configuracion from "./pages/Configuracion";
-import { tasaBcvApi, waitForBackend } from "./services/api";
-import type { TasaBCV } from "./types/models";
+import Activacion from "./pages/Activacion";
+import { tasaBcvApi, licenciaApi, waitForBackend } from "./services/api";
+import type { TasaBCV, LicenciaEstado } from "./types/models";
+
+function Cargando({ texto }: { texto: string }) {
+  return (
+    <div className="flex items-center justify-center h-screen bg-gray-50">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-blue-600 mb-4">Market POS</h1>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-500">{texto}</p>
+      </div>
+    </div>
+  );
+}
 
 function App() {
   const [tasaBcv, setTasaBcv] = useState<TasaBCV | null>(null);
   const [backendReady, setBackendReady] = useState(false);
+  const [licencia, setLicencia] = useState<LicenciaEstado | null>(null);
+  const [licVerificada, setLicVerificada] = useState(false);
+
+  const cargarTasa = useCallback(() => {
+    tasaBcvApi.actual().then(setTasaBcv).catch(() => {});
+  }, []);
 
   useEffect(() => {
     waitForBackend()
       .then(() => {
         setBackendReady(true);
-        return tasaBcvApi.actual();
+        return licenciaApi.estado();
       })
-      .then(setTasaBcv)
-      .catch(() => setBackendReady(true));
-  }, []);
+      .then((e) => {
+        setLicencia(e);
+        setLicVerificada(true);
+        if (e.activa) cargarTasa();
+      })
+      .catch(() => {
+        setBackendReady(true);
+        setLicencia({
+          activa: false,
+          motivo: "No se pudo verificar la licencia",
+          machine_id: "—",
+          info: null,
+        });
+        setLicVerificada(true);
+      });
+  }, [cargarTasa]);
 
   const navItems = [
     { to: "/", label: "Venta", icon: "🛒" },
@@ -30,15 +62,18 @@ function App() {
     { to: "/configuracion", label: "Configuración", icon: "⚙️" },
   ];
 
-  if (!backendReady) {
+  if (!backendReady) return <Cargando texto="Iniciando sistema..." />;
+  if (!licVerificada) return <Cargando texto="Verificando licencia..." />;
+
+  if (!licencia?.activa) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-blue-600 mb-4">Market POS</h1>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-500">Iniciando sistema...</p>
-        </div>
-      </div>
+      <Activacion
+        estado={licencia!}
+        onActivado={(e) => {
+          setLicencia(e);
+          if (e.activa) cargarTasa();
+        }}
+      />
     );
   }
 

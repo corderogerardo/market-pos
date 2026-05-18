@@ -1,3 +1,8 @@
+import os
+
+# Las pruebas no deben quedar bloqueadas por el control de licencia.
+os.environ.setdefault("MARKET_POS_LICENSE_ENFORCE", "0")
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker

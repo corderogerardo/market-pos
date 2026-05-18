@@ -28,6 +28,13 @@ Thumbs.db
 .env
 .env.local
 
+# Licencias — la clave PRIVADA nunca debe entrar al repo
+*.pem
+*.key
+*.lic
+.market-pos-keys/
+clave_privada*
+
 # Backups
 backups/
 

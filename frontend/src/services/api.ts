@@ -13,6 +13,7 @@ import type {
   DeudaCreate,
   DeudaUpdate,
   DeudaItemCreate,
+  LicenciaEstado,
 } from "../types/models";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 
@@ -125,6 +126,16 @@ export const deudasApi = {
     request<Deuda>(`/deudas/${deudaId}/items/${itemId}`, { method: "DELETE" }),
   eliminar: (id: string) =>
     request<{ mensaje: string }>(`/deudas/${id}`, { method: "DELETE" }),
+};
+
+// Licencia
+export const licenciaApi = {
+  estado: () => request<LicenciaEstado>("/licencia/estado"),
+  activar: (clave: string) =>
+    request<LicenciaEstado>("/licencia/activar", {
+      method: "POST",
+      body: JSON.stringify({ clave }),
+    }),
 };
 
 // Sync
