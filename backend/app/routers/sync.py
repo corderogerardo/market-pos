@@ -1,10 +1,31 @@
 import json
 import os
-from typing import List
-from datetime import datetime
+from typing import List, Optional
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 VE_TZ = ZoneInfo("America/Caracas")
+
+# v2 = fechas guardadas en America/Caracas. Backups sin "version" (v1) tienen
+# fechas heredadas en UTC y se corrigen -4h al restaurar.
+BACKUP_VERSION = 2
+
+
+def _parse_fecha(valor) -> Optional[datetime]:
+    """Convierte una fecha ISO de un backup a datetime naive (hora de pared)."""
+    if not valor:
+        return None
+    try:
+        dt = datetime.fromisoformat(valor)
+    except (ValueError, TypeError):
+        try:
+            limpio = str(valor).replace("T", " ").split(".")[0]
+            dt = datetime.strptime(limpio, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return None
+    if dt.tzinfo is not None:
+        dt = dt.replace(tzinfo=None)
+    return dt
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -24,6 +45,7 @@ BACKUP_DIR = os.path.join(os.path.expanduser("~"), ".market-pos", "backups")
 def _export_data(db: Session) -> dict:
     """Export all database data to a dictionary."""
     return {
+        "version": BACKUP_VERSION,
         "fecha_backup": datetime.now(VE_TZ).isoformat(),
         "productos": [
             {
@@ -150,6 +172,8 @@ def restaurar_backup(db: Session = Depends(get_db)):
         with open(filepath, "r", encoding="utf-8") as f:
             data = json.load(f)
 
+        backup_version = data.get("version", 1)
+
         for p_data in data.get("productos", []):
             existing = db.query(Producto).filter(Producto.id == p_data["id"]).first()
             if not existing:
@@ -160,7 +184,13 @@ def restaurar_backup(db: Session = Depends(get_db)):
             existing = db.query(Venta).filter(Venta.id == v_data["id"]).first()
             if not existing:
                 items_data = v_data.pop("items", [])
-                v = Venta(**{k: v for k, v in v_data.items() if k != "fecha"})
+                fecha = _parse_fecha(v_data.get("fecha"))
+                if fecha is not None and backup_version < 2:
+                    # Backup heredado: fechas en UTC -> Caracas (UTC-4).
+                    fecha = fecha - timedelta(hours=4)
+                v = Venta(**{k: val for k, val in v_data.items() if k != "fecha"})
+                if fecha is not None:
+                    v.fecha = fecha
                 for i_data in items_data:
                     vi = VentaItem(**i_data)
                     v.items.append(vi)

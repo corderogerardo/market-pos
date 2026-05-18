@@ -24,8 +24,34 @@ def get_db():
         db.close()
 
 
+# Antes del commit ca1a302 las fechas se guardaban en UTC; después en
+# America/Caracas (UTC-4 fijo, sin horario de verano desde 2016). Las ventas
+# anteriores al despliegue de esa corrección quedan 4h adelantadas respecto a
+# las nuevas, lo que descuadra los resúmenes por día/mes. Esta fecha separa
+# datos heredados (UTC) de datos nuevos (Caracas): no existen ventas nuevas
+# antes de ella porque el código corregido no existía aún.
+LEGACY_FECHA_CUTOFF = "2026-04-02"
+
+
+def _apply_legacy_date_fix(conn):
+    """One-time: normaliza fechas heredadas (UTC) a Caracas. Idempotente vía
+    PRAGMA user_version, así nunca se aplica el desfase dos veces."""
+    ver = conn.exec_driver_sql("PRAGMA user_version").scalar() or 0
+    if ver >= 1:
+        return
+    has_ventas = conn.exec_driver_sql(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='ventas'"
+    ).fetchone() is not None
+    if has_ventas:
+        conn.execute(
+            text("UPDATE ventas SET fecha = datetime(fecha, '-4 hours') WHERE fecha < :c"),
+            {"c": LEGACY_FECHA_CUTOFF},
+        )
+    conn.exec_driver_sql("PRAGMA user_version = 1")
+
+
 def _migrate_db():
-    """Add missing columns to existing tables."""
+    """Add missing columns and run one-time data migrations."""
     insp = inspect(engine)
     if "productos" in insp.get_table_names():
         columns = {col["name"] for col in insp.get_columns("productos")}
@@ -34,6 +60,8 @@ def _migrate_db():
                 conn.execute(text("ALTER TABLE productos ADD COLUMN tipo_venta VARCHAR DEFAULT 'peso'"))
             if "inventario" not in columns:
                 conn.execute(text("ALTER TABLE productos ADD COLUMN inventario FLOAT"))
+    with engine.begin() as conn:
+        _apply_legacy_date_fix(conn)
 
 
 def init_db():
