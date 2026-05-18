@@ -23,7 +23,7 @@ function App() {
   }, []);
 
   const navItems = [
-    { to: "/", label: "Checkout", icon: "🛒" },
+    { to: "/", label: "Venta", icon: "🛒" },
     { to: "/productos", label: "Productos", icon: "📦" },
     { to: "/ventas", label: "Ventas", icon: "📊" },
     { to: "/deudas", label: "Deudas", icon: "📒" },

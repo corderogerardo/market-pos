@@ -1,1 +1,80 @@
 @import "tailwindcss";
+
+/* Paleta pastel global: redefine los tokens de color por defecto de Tailwind v4,
+   así toda la app adopta el tema sin tocar las clases en los componentes.
+   Tonos claros (-50/-100/-200) bien pastel; tonos -600/-700 atenuados pero
+   con suficiente contraste para texto/botones (WCAG AA). */
+@theme {
+  /* Neutro limpio — superficies de listas/tablas en blanco/gris claro,
+     sin tinte de color. El carácter pastel vive en los acentos de abajo. */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+
+  /* Azul periwinkle — color primario */
+  --color-blue-50: #eef0fc;
+  --color-blue-100: #e0e4fb;
+  --color-blue-200: #c8cff6;
+  --color-blue-300: #a8b2ee;
+  --color-blue-400: #8794e4;
+  --color-blue-500: #6c7bdb;
+  --color-blue-600: #5566cf;
+  --color-blue-700: #4453b0;
+  --color-blue-800: #38438c;
+  --color-blue-900: #313a72;
+
+  /* Verde salvia — dinero / éxito */
+  --color-green-50: #eaf6ef;
+  --color-green-100: #d4eede;
+  --color-green-200: #b2e0c7;
+  --color-green-300: #84cda4;
+  --color-green-400: #4fb07e;
+  --color-green-500: #259a60;
+  --color-green-600: #15824e;
+  --color-green-700: #136e42;
+  --color-green-800: #115937;
+  --color-green-900: #0f4a2f;
+
+  /* Rosa — deuda / peligro */
+  --color-red-50: #fdedef;
+  --color-red-100: #fbdce0;
+  --color-red-200: #f5c0c7;
+  --color-red-300: #ed98a3;
+  --color-red-400: #e16f80;
+  --color-red-500: #d44d63;
+  --color-red-600: #c5374f;
+  --color-red-700: #a82c41;
+  --color-red-800: #88243a;
+  --color-red-900: #6f1f31;
+
+  /* Durazno — notas / advertencias */
+  --color-amber-50: #fdf3e6;
+  --color-amber-100: #fbe6cc;
+  --color-amber-200: #f5d099;
+  --color-amber-300: #eeb561;
+  --color-amber-400: #e39a34;
+  --color-amber-500: #ce8316;
+  --color-amber-600: #a86a0d;
+  --color-amber-700: #8a560f;
+  --color-amber-800: #71470f;
+  --color-amber-900: #5d3a10;
+
+  /* Lila — acento de resumen mensual */
+  --color-indigo-50: #f2eefb;
+  --color-indigo-100: #e4dcf8;
+  --color-indigo-200: #ccbcf2;
+  --color-indigo-300: #ad96e8;
+  --color-indigo-400: #8f71dd;
+  --color-indigo-500: #7755d0;
+  --color-indigo-600: #6444bb;
+  --color-indigo-700: #523697;
+  --color-indigo-800: #442d7a;
+  --color-indigo-900: #392765;
+}
