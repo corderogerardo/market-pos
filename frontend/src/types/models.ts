@@ -97,3 +97,41 @@ export interface SyncResponse {
   estado: string;
   detalles: string | null;
 }
+
+export interface DeudaItem {
+  id: string;
+  producto_id: string | null;
+  nombre_producto: string;
+  cantidad: number;
+  precio_unitario: number;
+  subtotal: number;
+  creado_en: string;
+}
+
+export interface Deuda {
+  id: string;
+  nombre_cliente: string;
+  nota: string | null;
+  creado_en: string;
+  actualizado_en: string;
+  total_usd: number;
+  items: DeudaItem[];
+}
+
+export interface DeudaItemCreate {
+  producto_id?: string | null;
+  nombre_producto: string;
+  cantidad: number;
+  precio_unitario: number;
+}
+
+export interface DeudaCreate {
+  nombre_cliente: string;
+  nota?: string;
+  items: DeudaItemCreate[];
+}
+
+export interface DeudaUpdate {
+  nombre_cliente?: string;
+  nota?: string;
+}

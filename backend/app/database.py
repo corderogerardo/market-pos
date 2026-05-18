@@ -37,6 +37,6 @@ def _migrate_db():
 
 
 def init_db():
-    from app.models import producto, venta, tasa_bcv, sincronizacion  # noqa: F401
+    from app.models import producto, venta, tasa_bcv, sincronizacion, deuda  # noqa: F401
     Base.metadata.create_all(bind=engine)
     _migrate_db()

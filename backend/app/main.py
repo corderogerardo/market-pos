@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db
-from app.routers import productos, ventas, tasa_bcv, sync
+from app.routers import productos, ventas, tasa_bcv, sync, deudas
 
 
 @asynccontextmanager
@@ -30,6 +30,7 @@ app.include_router(productos.router, prefix="/productos", tags=["Productos"])
 app.include_router(ventas.router, prefix="/ventas", tags=["Ventas"])
 app.include_router(tasa_bcv.router, prefix="/tasa-bcv", tags=["Tasa BCV"])
 app.include_router(sync.router, prefix="/sync", tags=["Sincronización"])
+app.include_router(deudas.router, prefix="/deudas", tags=["Deudas"])
 
 
 @app.get("/")

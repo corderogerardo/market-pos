@@ -9,6 +9,10 @@ import type {
   ResumenMensual,
   SyncResponse,
   MetodoPago,
+  Deuda,
+  DeudaCreate,
+  DeudaUpdate,
+  DeudaItemCreate,
 } from "../types/models";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 
@@ -102,6 +106,25 @@ export const tasaBcvApi = {
   manual: (tasa: number) =>
     request<TasaBCV>("/tasa-bcv/manual", { method: "POST", body: JSON.stringify({ tasa }) }),
   historial: () => request<TasaBCV[]>("/tasa-bcv/historial"),
+};
+
+// Deudas
+export const deudasApi = {
+  listar: (q?: string) => {
+    const qs = q ? `?q=${encodeURIComponent(q)}` : "";
+    return request<Deuda[]>(`/deudas/${qs}`);
+  },
+  obtener: (id: string) => request<Deuda>(`/deudas/${id}`),
+  crear: (data: DeudaCreate) =>
+    request<Deuda>("/deudas/", { method: "POST", body: JSON.stringify(data) }),
+  actualizar: (id: string, data: DeudaUpdate) =>
+    request<Deuda>(`/deudas/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  agregarItem: (id: string, data: DeudaItemCreate) =>
+    request<Deuda>(`/deudas/${id}/items`, { method: "POST", body: JSON.stringify(data) }),
+  eliminarItem: (deudaId: string, itemId: string) =>
+    request<Deuda>(`/deudas/${deudaId}/items/${itemId}`, { method: "DELETE" }),
+  eliminar: (id: string) =>
+    request<{ mensaje: string }>(`/deudas/${id}`, { method: "DELETE" }),
 };
 
 // Sync

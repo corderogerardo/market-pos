@@ -12,6 +12,7 @@ from app.models.producto import Producto
 from app.models.venta import Venta, VentaItem
 from app.models.tasa_bcv import TasaBCV
 from app.models.sincronizacion import Sincronizacion
+from app.models.deuda import Deuda, DeudaItem
 from app.schemas.sync import SyncResponse
 
 router = APIRouter()
@@ -57,6 +58,23 @@ def _export_data(db: Session) -> dict:
                 "consultado_en": t.consultado_en.isoformat() if t.consultado_en else None,
             }
             for t in db.query(TasaBCV).all()
+        ],
+        "deudas": [
+            {
+                "id": d.id, "nombre_cliente": d.nombre_cliente, "nota": d.nota,
+                "creado_en": d.creado_en.isoformat() if d.creado_en else None,
+                "actualizado_en": d.actualizado_en.isoformat() if d.actualizado_en else None,
+                "items": [
+                    {
+                        "id": i.id, "producto_id": i.producto_id,
+                        "nombre_producto": i.nombre_producto,
+                        "cantidad": i.cantidad, "precio_unitario": i.precio_unitario,
+                        "subtotal": i.subtotal,
+                    }
+                    for i in d.items
+                ],
+            }
+            for d in db.query(Deuda).all()
         ],
     }
 
@@ -153,6 +171,15 @@ def restaurar_backup(db: Session = Depends(get_db)):
             if not existing:
                 t = TasaBCV(**{k: v for k, v in t_data.items() if k != "consultado_en"})
                 db.add(t)
+
+        for d_data in data.get("deudas", []):
+            existing = db.query(Deuda).filter(Deuda.id == d_data["id"]).first()
+            if not existing:
+                items_data = d_data.pop("items", [])
+                d = Deuda(**{k: v for k, v in d_data.items() if k not in ("creado_en", "actualizado_en")})
+                for i_data in items_data:
+                    d.items.append(DeudaItem(**i_data))
+                db.add(d)
 
         db.commit()
 

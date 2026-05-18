@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Checkout from "./pages/Checkout";
 import Productos from "./pages/Productos";
 import Ventas from "./pages/Ventas";
+import Deudas from "./pages/Deudas";
 import Configuracion from "./pages/Configuracion";
 import { tasaBcvApi, waitForBackend } from "./services/api";
 import type { TasaBCV } from "./types/models";
@@ -25,6 +26,7 @@ function App() {
     { to: "/", label: "Checkout", icon: "🛒" },
     { to: "/productos", label: "Productos", icon: "📦" },
     { to: "/ventas", label: "Ventas", icon: "📊" },
+    { to: "/deudas", label: "Deudas", icon: "📒" },
     { to: "/configuracion", label: "Configuración", icon: "⚙️" },
   ];
 
@@ -79,6 +81,7 @@ function App() {
           <Route path="/" element={<Checkout tasaBcv={tasaBcv} onTasaUpdate={setTasaBcv} />} />
           <Route path="/productos" element={<Productos />} />
           <Route path="/ventas" element={<Ventas />} />
+          <Route path="/deudas" element={<Deudas />} />
           <Route path="/configuracion" element={<Configuracion tasaBcv={tasaBcv} onTasaUpdate={setTasaBcv} />} />
         </Routes>
       </main>
