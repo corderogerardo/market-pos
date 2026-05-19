@@ -50,6 +50,40 @@ def _apply_legacy_date_fix(conn):
     conn.exec_driver_sql("PRAGMA user_version = 1")
 
 
+def _make_venta_items_producto_id_nullable(conn):
+    """`venta_items.producto_id` nació NOT NULL, pero al saldar una deuda con
+    productos manuales (sin `producto_id`) se inserta NULL. SQLite no permite
+    soltar el NOT NULL con ALTER, así que reconstruimos la tabla. Idempotente:
+    si la columna ya admite NULL no hace nada."""
+    cols = conn.exec_driver_sql("PRAGMA table_info(venta_items)").fetchall()
+    if not cols:
+        return
+    # PRAGMA table_info => (cid, name, type, notnull, dflt_value, pk)
+    pid = next((c for c in cols if c[1] == "producto_id"), None)
+    if pid is None or pid[3] == 0:
+        return
+    conn.exec_driver_sql("ALTER TABLE venta_items RENAME TO venta_items_old")
+    conn.exec_driver_sql(
+        "CREATE TABLE venta_items ("
+        "id VARCHAR NOT NULL PRIMARY KEY, "
+        "venta_id VARCHAR NOT NULL, "
+        "producto_id VARCHAR, "
+        "nombre_producto VARCHAR NOT NULL, "
+        "cantidad FLOAT NOT NULL, "
+        "precio_unitario FLOAT NOT NULL, "
+        "subtotal FLOAT NOT NULL, "
+        "FOREIGN KEY(venta_id) REFERENCES ventas (id), "
+        "FOREIGN KEY(producto_id) REFERENCES productos (id))"
+    )
+    conn.exec_driver_sql(
+        "INSERT INTO venta_items "
+        "(id, venta_id, producto_id, nombre_producto, cantidad, precio_unitario, subtotal) "
+        "SELECT id, venta_id, producto_id, nombre_producto, cantidad, precio_unitario, subtotal "
+        "FROM venta_items_old"
+    )
+    conn.exec_driver_sql("DROP TABLE venta_items_old")
+
+
 def _migrate_db():
     """Add missing columns and run one-time data migrations."""
     insp = inspect(engine)
@@ -60,6 +94,9 @@ def _migrate_db():
                 conn.execute(text("ALTER TABLE productos ADD COLUMN tipo_venta VARCHAR DEFAULT 'peso'"))
             if "inventario" not in columns:
                 conn.execute(text("ALTER TABLE productos ADD COLUMN inventario FLOAT"))
+    if "venta_items" in insp.get_table_names():
+        with engine.begin() as conn:
+            _make_venta_items_producto_id_nullable(conn)
     with engine.begin() as conn:
         _apply_legacy_date_fix(conn)
 

@@ -3,7 +3,16 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.deuda import Deuda, DeudaItem
-from app.schemas.deuda import DeudaCreate, DeudaUpdate, DeudaItemCreate, DeudaResponse
+from app.models.producto import Producto
+from app.models.venta import Venta, VentaItem
+from app.schemas.deuda import (
+    DeudaCreate,
+    DeudaUpdate,
+    DeudaItemCreate,
+    DeudaResponse,
+    SaldarDeudaRequest,
+)
+from app.schemas.venta import VentaResponse
 
 router = APIRouter()
 
@@ -108,6 +117,51 @@ def eliminar_item(deuda_id: str, item_id: str, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(deuda)
     return deuda
+
+
+@router.post("/{deuda_id}/saldar", response_model=VentaResponse)
+def saldar_deuda(deuda_id: str, datos: SaldarDeudaRequest, db: Session = Depends(get_db)):
+    """El cliente pagó la deuda completa: se convierte en una venta para
+    llevar el control de todo lo vendido y la deuda se elimina."""
+    deuda = db.query(Deuda).filter(Deuda.id == deuda_id).first()
+    if not deuda:
+        raise HTTPException(status_code=404, detail="Deuda no encontrada")
+    if not deuda.items:
+        raise HTTPException(status_code=400, detail="La deuda no tiene productos por pagar")
+
+    total_usd = round(sum(i.subtotal for i in deuda.items), 2)
+    total_bs = round(total_usd * datos.tasa_bcv, 2)
+
+    venta = Venta(
+        total_usd=total_usd,
+        tasa_bcv=datos.tasa_bcv,
+        total_bs=total_bs,
+        metodo_pago=datos.metodo_pago.value,
+        items=[
+            VentaItem(
+                producto_id=item.producto_id,
+                nombre_producto=item.nombre_producto,
+                cantidad=item.cantidad,
+                precio_unitario=item.precio_unitario,
+                subtotal=item.subtotal,
+            )
+            for item in deuda.items
+        ],
+    )
+
+    # Descontar inventario de los productos del catálogo (los manuales no tienen)
+    for item in deuda.items:
+        if not item.producto_id:
+            continue
+        producto = db.query(Producto).filter(Producto.id == item.producto_id).first()
+        if producto and producto.inventario is not None:
+            producto.inventario = max(0, producto.inventario - item.cantidad)
+
+    db.add(venta)
+    db.delete(deuda)
+    db.commit()
+    db.refresh(venta)
+    return venta
 
 
 @router.delete("/{deuda_id}")

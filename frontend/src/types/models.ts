@@ -40,7 +40,7 @@ export interface ProductoUpdate {
 
 export interface VentaItem {
   id: string;
-  producto_id: string;
+  producto_id: string | null;
   nombre_producto: string;
   cantidad: number;
   precio_unitario: number;
@@ -134,6 +134,11 @@ export interface DeudaCreate {
 export interface DeudaUpdate {
   nombre_cliente?: string;
   nota?: string;
+}
+
+export interface SaldarDeuda {
+  metodo_pago: MetodoPago;
+  tasa_bcv: number;
 }
 
 export interface LicenciaInfo {

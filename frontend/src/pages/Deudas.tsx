@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { deudasApi, productosApi, tasaBcvApi } from "../services/api";
-import type { Deuda, Producto } from "../types/models";
+import type { Deuda, Producto, MetodoPago } from "../types/models";
+
+const METODOS_PAGO: { value: MetodoPago; label: string }[] = [
+  { value: "efectivo", label: "Efectivo" },
+  { value: "pago_movil", label: "Pago Móvil" },
+  { value: "punto_de_venta", label: "Punto de Venta" },
+];
 
 interface BuilderItem {
   key: string;
@@ -34,6 +40,8 @@ export default function Deudas() {
   const [mensaje, setMensaje] = useState("");
   const [expandido, setExpandido] = useState<string | null>(null);
   const [confirmandoEliminar, setConfirmandoEliminar] = useState<string | null>(null);
+  const [saldando, setSaldando] = useState<string | null>(null);
+  const [procesandoSaldo, setProcesandoSaldo] = useState(false);
 
   // Modal state: "nueva" | { agregarA: Deuda } | { editar: Deuda } | null
   const [modal, setModal] = useState<
@@ -254,6 +262,27 @@ export default function Deudas() {
       setDeudas((prev) => prev.map((d) => (d.id === deudaId ? actualizada : d)));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al marcar como pagado");
+    }
+  };
+
+  const saldarDeuda = async (deuda: Deuda, metodo: MetodoPago) => {
+    if (!tasa) {
+      setError("No hay tasa BCV disponible para registrar la venta");
+      return;
+    }
+    setProcesandoSaldo(true);
+    setError("");
+    try {
+      await deudasApi.saldar(deuda.id, { metodo_pago: metodo, tasa_bcv: tasa });
+      setSaldando(null);
+      setExpandido(null);
+      cargar();
+      setMensaje(`Deuda de ${deuda.nombre_cliente} saldada y registrada como venta`);
+      setTimeout(() => setMensaje(""), 3000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al saldar la deuda");
+    } finally {
+      setProcesandoSaldo(false);
     }
   };
 
@@ -575,6 +604,50 @@ export default function Deudas() {
                   <p className="text-center text-gray-400 py-4">
                     No quedan productos por pagar
                   </p>
+                )}
+
+                {d.items.length > 0 && (
+                  <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    {saldando === d.id ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-medium text-green-800">
+                          ¿Cómo pagó {d.nombre_cliente}?
+                        </span>
+                        {METODOS_PAGO.map((m) => (
+                          <button
+                            key={m.value}
+                            disabled={procesandoSaldo}
+                            onClick={() => saldarDeuda(d, m.value)}
+                            className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300"
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                        <button
+                          disabled={procesandoSaldo}
+                          onClick={() => setSaldando(null)}
+                          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-100"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm text-green-800">
+                          Cuando el cliente pague todo, se registra como venta.
+                        </span>
+                        <button
+                          onClick={() => {
+                            setSaldando(d.id);
+                            setError("");
+                          }}
+                          className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 whitespace-nowrap"
+                        >
+                          ✓ Pagar todo y registrar venta
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 <div className="flex items-center gap-2">

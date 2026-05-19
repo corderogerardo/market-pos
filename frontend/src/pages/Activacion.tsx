@@ -11,17 +11,6 @@ export default function Activacion({ estado, onActivado }: Props) {
   const [clave, setClave] = useState("");
   const [error, setError] = useState("");
   const [procesando, setProcesando] = useState(false);
-  const [copiado, setCopiado] = useState(false);
-
-  const copiarId = async () => {
-    try {
-      await navigator.clipboard.writeText(estado.machine_id);
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2000);
-    } catch {
-      /* algunos webviews no permiten clipboard; el ID igual es visible */
-    }
-  };
 
   const activar = async () => {
     if (!clave.trim()) {
@@ -54,35 +43,21 @@ export default function Activacion({ estado, onActivado }: Props) {
 
         <div className="mb-5">
           <label className="block text-sm text-gray-600 mb-1">
-            ID de este equipo
-          </label>
-          <div className="flex gap-2">
-            <code className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono break-all">
-              {estado.machine_id}
-            </code>
-            <button
-              onClick={copiarId}
-              className="px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 whitespace-nowrap"
-            >
-              {copiado ? "Copiado" : "Copiar"}
-            </button>
-          </div>
-          <p className="text-xs text-gray-400 mt-1">
-            Envía este ID al proveedor para recibir tu clave de licencia.
-          </p>
-        </div>
-
-        <div className="mb-5">
-          <label className="block text-sm text-gray-600 mb-1">
             Clave de licencia
           </label>
-          <textarea
+          <input
+            type="text"
             value={clave}
             onChange={(e) => setClave(e.target.value)}
-            placeholder="Pega aquí la clave que te enviaron..."
-            rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") activar();
+            }}
+            placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono tracking-wider focus:ring-2 focus:ring-blue-500 outline-none"
           />
+          <p className="text-xs text-gray-400 mt-1">
+            Ingresa la clave de activación que te entregó el proveedor.
+          </p>
         </div>
 
         {error && (

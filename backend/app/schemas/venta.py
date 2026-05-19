@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 from pydantic import BaseModel
 from datetime import datetime
 from enum import Enum
@@ -23,7 +23,7 @@ class VentaCreate(BaseModel):
 
 class VentaItemResponse(BaseModel):
     id: str
-    producto_id: str
+    producto_id: Optional[str] = None
     nombre_producto: str
     cantidad: float
     precio_unitario: float

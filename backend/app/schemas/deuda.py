@@ -1,6 +1,7 @@
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
+from app.schemas.venta import MetodoPago
 
 
 class DeudaItemCreate(BaseModel):
@@ -19,6 +20,11 @@ class DeudaCreate(BaseModel):
 class DeudaUpdate(BaseModel):
     nombre_cliente: Optional[str] = None
     nota: Optional[str] = None
+
+
+class SaldarDeudaRequest(BaseModel):
+    metodo_pago: MetodoPago
+    tasa_bcv: float
 
 
 class DeudaItemResponse(BaseModel):

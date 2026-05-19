@@ -1,5 +1,5 @@
 import uuid
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -35,7 +35,9 @@ class VentaItem(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     venta_id: Mapped[str] = mapped_column(String, ForeignKey("ventas.id"), nullable=False)
-    producto_id: Mapped[str] = mapped_column(String, ForeignKey("productos.id"), nullable=False)
+    producto_id: Mapped[Optional[str]] = mapped_column(
+        String, ForeignKey("productos.id"), nullable=True
+    )
     nombre_producto: Mapped[str] = mapped_column(String, nullable=False, default="")
     cantidad: Mapped[float] = mapped_column(Float, nullable=False)
     precio_unitario: Mapped[float] = mapped_column(Float, nullable=False)

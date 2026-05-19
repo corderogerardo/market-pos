@@ -123,3 +123,87 @@ def test_item_cantidad_invalida(client):
 def test_deuda_no_encontrada(client):
     assert client.get("/deudas/no-existe").status_code == 404
     assert client.delete("/deudas/no-existe").status_code == 404
+
+
+def test_saldar_deuda_crea_venta_y_elimina_deuda(client, productos_test):
+    p1, p2 = productos_test
+    deuda = client.post("/deudas/", json={
+        "nombre_cliente": "Juan",
+        "items": [
+            {"producto_id": p1["id"], "nombre_producto": "Arroz", "cantidad": 2, "precio_unitario": 1.20},
+            {"producto_id": p2["id"], "nombre_producto": "Pasta", "cantidad": 3, "precio_unitario": 0.90},
+        ],
+    }).json()
+
+    response = client.post(f"/deudas/{deuda['id']}/saldar", json={
+        "metodo_pago": "efectivo",
+        "tasa_bcv": 36.50,
+    })
+    assert response.status_code == 200
+    venta = response.json()
+    # 2*1.20 + 3*0.90 = 5.10
+    assert venta["total_usd"] == 5.10
+    assert venta["total_bs"] == round(5.10 * 36.50, 2)
+    assert venta["metodo_pago"] == "efectivo"
+    assert len(venta["items"]) == 2
+
+    # La deuda ya no existe
+    assert client.get(f"/deudas/{deuda['id']}").status_code == 404
+    # La venta queda registrada
+    ventas = client.get("/ventas/").json()
+    assert any(v["id"] == venta["id"] for v in ventas)
+
+
+def test_saldar_deuda_con_item_manual(client):
+    deuda = client.post("/deudas/", json={
+        "nombre_cliente": "Maria",
+        "items": [{"nombre_producto": "Refresco", "cantidad": 1, "precio_unitario": 1.50}],
+    }).json()
+
+    response = client.post(f"/deudas/{deuda['id']}/saldar", json={
+        "metodo_pago": "pago_movil",
+        "tasa_bcv": 40.0,
+    })
+    assert response.status_code == 200
+    venta = response.json()
+    assert venta["total_usd"] == 1.50
+    assert venta["items"][0]["producto_id"] is None
+    assert venta["items"][0]["nombre_producto"] == "Refresco"
+
+
+def test_saldar_deuda_descuenta_inventario(client):
+    producto = client.post("/productos/", json={
+        "nombre": "Harina", "precio": 2.00, "qr_code": "HAR01", "inventario": 10,
+    }).json()
+    deuda = client.post("/deudas/", json={
+        "nombre_cliente": "Carlos",
+        "items": [
+            {"producto_id": producto["id"], "nombre_producto": "Harina", "cantidad": 3, "precio_unitario": 2.00},
+        ],
+    }).json()
+
+    response = client.post(f"/deudas/{deuda['id']}/saldar", json={
+        "metodo_pago": "punto_de_venta",
+        "tasa_bcv": 36.50,
+    })
+    assert response.status_code == 200
+
+    actualizado = client.get(f"/productos/{producto['id']}").json()
+    assert actualizado["inventario"] == 7
+
+
+def test_saldar_deuda_vacia(client):
+    deuda = client.post("/deudas/", json={"nombre_cliente": "Ana", "items": []}).json()
+    response = client.post(f"/deudas/{deuda['id']}/saldar", json={
+        "metodo_pago": "efectivo",
+        "tasa_bcv": 36.50,
+    })
+    assert response.status_code == 400
+
+
+def test_saldar_deuda_no_encontrada(client):
+    response = client.post("/deudas/no-existe/saldar", json={
+        "metodo_pago": "efectivo",
+        "tasa_bcv": 36.50,
+    })
+    assert response.status_code == 404
