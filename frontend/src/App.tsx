@@ -65,18 +65,6 @@ function App() {
   if (!backendReady) return <Cargando texto="Iniciando sistema..." />;
   if (!licVerificada) return <Cargando texto="Verificando licencia..." />;
 
-  if (!licencia?.activa) {
-    return (
-      <Activacion
-        estado={licencia!}
-        onActivado={(e) => {
-          setLicencia(e);
-          if (e.activa) cargarTasa();
-        }}
-      />
-    );
-  }
-
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
